@@ -1,0 +1,190 @@
+---
+title: "NC responses"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library("tidyverse")
+library("tidyr")
+```
+```{r}
+setwd("~/Desktop/MDP/MDP 3rd semester/Final project/Data")
+nc <- read.csv("NC Reports - Survey responses (1).csv")
+```
+
+```{r}
+nc %>%
+  select(Neighborhood) %>%
+  group_by(Neighborhood) %>%
+  summary(num_project = count(Neighborhood, wt = NULL))
+```
+
+Types of projects
+```{r}
+nc %>%
+  group_by(Neighborhood, Type) %>%
+  summarise(Total.Project.Cost = sum(Total.Project.Cost)) %>%
+  ggplot(aes(x = Type, y = Total.Project.Cost), color = Neighborhood) +
+  geom_col()
+
+nc %>%
+  select(Neighborhood, Type, Total.Project.Cost) %>%
+  pivot_wider()
+```
+
+```{r}
+nc %>%
+  ggplot(aes(x = Time.to.complete..in.days., y = factor(1))) +
+  geom_point(alpha = 0.2, size = 5) +
+  labs(y = NULL) +
+  scale_x_continuous(expand = expand_scale(mult = c(0.002, 0)), 
+                     limits = c(0, 365)) +
+  scale_y_discrete(labels = NULL) +
+  labs(title = "Total Sleep Time of Different Mammals",
+       x = "Total sleep time (hours)",
+       y = NULL) +
+  theme(axis.ticks.y = element_blank())
+
+nc %>%
+  filter(!is.na(Type)) %>%
+  group_by(Type) %>%
+  summarise(Total_hour = sum(Time.to.complete..in.days.)) %>%
+  ggplot(aes(x = Time.to.complete..in.days., y = Type)) +
+  geom_col(alpha = 0.2, size = 5) +
+  scale_x_continuous(expand = expansion(mult = c(0.002, 0)), 
+                     limits = c(0, 25), 
+                     breaks = 0:5 * 5) +  
+  labs(title = "Total Sleep Time of Different Mammals by Diet",
+       x = "Total sleep time (hours)",
+       y = NULL) +
+  theme(axis.ticks.y = element_blank())
+```
+
+
+
+Total Project Costs 2015-2022
+```{r}
+nc %>%
+  ggplot(aes(x = Year, y = Total.Project.Cost, fill = Neighborhood)) +
+  geom_col() +
+  labs(y = "Project costs ($)") +
+  facet_wrap(~ Neighborhood)
+```
+
+Project completion 2015-2022
+```{r}
+nc %>%
+  ggplot(aes(y = Time.to.complete..in.days., color = Neighborhood)) +
+  geom_boxplot() +
+  ggtitle("Total Project Days by Neighborhood") +
+  labs(y = "Days") +
+  theme_classic()
+```
+
+# Percent of people involved from the Neighborhoods compared to the total number of participants
+```{r}
+nc %>%
+  group_by(Neighborhood) %>%
+  summarise(Involved.from.the.Neighborhood = sum(Involved.from.the.Neighborhood), Total.Number.of.People.Involved = sum(Total.Number.of.People.Involved)) %>%
+  mutate(Percent = Involved.from.the.Neighborhood/Total.Number.of.People.Involved) %>%
+  ggplot(aes(y= Percent), color = Neighborhood, alpha = .8) +
+  geom_hline(yintercept=0.51, linetype="dashed", size = 1) +
+  geom_histogram()
+```
+
+#Total Number of People Involved by Neighborhoods
+```{r}
+nc %>%
+  group_by(Year, Neighborhood) %>%
+  summarise(Total.Number.of.People.Involved = sum(Total.Number.of.People.Involved)) %>%
+  ggplot(aes(x = Year, y = Total.Number.of.People.Involved, fill = Neighborhood)) +
+  geom_col() +
+  ggtitle("Total Number of People Involved by Neighborhoods") +
+  labs(x = "Year", y = "Number of participants")
+```
+
+## Measure of success
+```{r}
+indicators <- str_trim(
+  unlist(
+    strsplit(
+      toString(nc$CODE.1), ",")))
+
+indicators %>% 
+  recode(a = "Connection", 
+         b = "Program Completion",
+         c = "Funding/Revenue",
+         d = "Advocacy/Awareness/Education",
+         e = "Public space activated/improved",
+         f = "Sense of agency/pride",
+         else = "missing") -> indicators
+
+?recode
+
+indicators_df <- data.frame(indicators)
+count_df <- count(indicators_df %>% drop_na(),indicators)
+
+count_df %>%
+  mutate(indicators = fct_reorder(indicators, n)) %>%
+  ggplot() +
+  geom_col(aes(y = indicators, x = n), fill = "#F05831") +
+  labs(x = "Frequency", y = "Indicators") +
+  theme_classic()
+```
+
+
+## Maintenance plan
+```{r}
+plans <- str_trim(
+  unlist(
+    strsplit(
+      toString(nc$CODE), ",")))
+
+plans %>% 
+  recode(a = "No plan/ No plan needed", 
+         b = "One-time maintenance/ Case-by-case",
+         c = "Residents-responsible",
+         d = "City/policy support needed",
+         e = "EBALDC/ partners-responsible",
+         f = "Funding needed",
+         g = "Continuing events") -> plans
+
+plans_df <- data.frame(plans)
+count_plans_df <- count(plans_df %>% drop_na(),plans)
+
+count_plans_df %>%
+  mutate(plans = fct_reorder(plans, n)) %>%
+  ggplot() +
+  geom_col(aes(y = plans, x = n), fill = "#008F85") +
+  labs(x = "Frequency", y = "Indicators") +
+  theme_classic()
+```
+
+
+# if else exercise
+```{r}
+nc %>% 
+  mutate(nc2 = ifelse(Neighborhood == "Chinatown", 1, 0)) %>% 
+  View()
+
+  ,cylinder = case_when(
+    cyl == 4 ~ "four"
+    ,cyl == 6 ~ "six"
+    ,cyl == 8 ~ "eight"
+    ,TRUE ~ "other"
+  )
+)
+```
+
+#mapping
+```{r}
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng = -122.2581443, lat = 37.875444,
+             popup = "Goldman School of Public Policy")
+```
+
+
+
